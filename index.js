@@ -2,13 +2,24 @@ const { Telegraf } = require('telegraf');
 const { Client } = require('@notionhq/client');
 const { google } = require('googleapis');
 
+// Telegram & Notion
 const bot = new Telegraf(process.env.BOT_TOKEN);
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
-const calendar = google.calendar({ version: 'v3', auth: process.env.GOOGLE_PRIVATE_KEY });
 
+// Google API Auth
+const auth = new google.auth.JWT(
+  process.env.GOOGLE_CLIENT_EMAIL,
+  null,
+  process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  ['https://www.googleapis.com/auth/calendar']
+);
+const calendar = google.calendar({ version: 'v3', auth });
+
+// Константы
 const GOOGLE_CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID;
 const NOTION_PAGE_ID = process.env.NOTION_PAGE_ID;
 
+// Команда: /план
 bot.command('план', async (ctx) => {
   const today = new Date();
   const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString();
@@ -29,6 +40,7 @@ bot.command('план', async (ctx) => {
   ctx.reply(message);
 });
 
+// Команда: /новая_идея
 bot.command('новая_идея', async (ctx) => {
   const text = ctx.message.text.replace('/новая_идея', '').trim();
   if (!text) return ctx.reply('Напиши идею после команды');
@@ -45,6 +57,7 @@ bot.command('новая_идея', async (ctx) => {
   ctx.reply('💡 Идея записана в Notion');
 });
 
+// Запуск бота
 (async () => {
   try {
     await bot.telegram.deleteWebhook();
