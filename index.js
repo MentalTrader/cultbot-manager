@@ -1,36 +1,27 @@
-const { Telegraf } = require('telegraf');
-const { Configuration, OpenAIApi } = require('openai');
+import { Telegraf } from 'telegraf'
+import 'dotenv/config'
+import OpenAI from 'openai'
 
-const bot = new Telegraf(process.env.BOT_TOKEN);
+const bot = new Telegraf(process.env.BOT_TOKEN)
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY
-});
-const openai = new OpenAIApi(configuration);
+bot.start((ctx) => ctx.reply('✅ Бот работает'))
 
 bot.on('text', async (ctx) => {
-  const userMessage = ctx.message.text;
-
+  const userMessage = ctx.message.text
   try {
-    const response = await openai.createChatCompletion({
+    const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
-      messages: [{ role: 'user', content: userMessage }],
-    });
+      messages: [{ role: 'user', content: userMessage }]
+    })
 
-    const reply = response.data.choices[0].message.content;
-    ctx.reply(reply);
+    const botReply = completion.choices[0].message.content
+    ctx.reply(botReply)
   } catch (error) {
-    console.error('OpenAI API Error:', error);
-    ctx.reply('Произошла ошибка при обращении к ИИ. Попробуй ещё раз позже.');
+    console.error('Ошибка при запросе к OpenAI:', error)
+    ctx.reply('Произошла ошибка при обработке запроса')
   }
-});
+})
 
-(async () => {
-  try {
-    await bot.telegram.deleteWebhook();
-    await bot.launch();
-    console.log('✅ CultBot Assistant запущен (polling)');
-  } catch (err) {
-    console.error('❌ Ошибка запуска бота:', err);
-  }
-})();
+bot.launch()
+console.log('✅ CultBot Assistant запущен (polling)')
